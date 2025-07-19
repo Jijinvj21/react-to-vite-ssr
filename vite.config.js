@@ -4,15 +4,11 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   build: {
-    ssr: true,
     rollupOptions: {
-      input: "src/entry-server.jsx",
-      output: {
-        format: "esm",
-      },
+      input: "/index.html",
     },
   },
   ssr: {
-    format: "esm",
+    external: ["react", "react-dom"],
   },
 });
