@@ -19,21 +19,21 @@ async function createServer() {
   app.use(vite.middlewares);
 
   // Example dynamic OG image endpoint
-  app.get("/og-image/:id", (req, res) => {
-    const { id } = req.params;
-    const width = 1200;
-    const height = 630;
+  // app.get("/og-image/:id", (req, res) => {
+  //   const { id } = req.params;
+  //   const width = 1200;
+  //   const height = 630;
 
-    res.type("image/svg+xml");
-    res.send(`
-      <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-        <rect width="${width}" height="${height}" fill="#1a202c"/>
-        <text x="50%" y="50%" font-family="Arial" font-size="48" fill="#fff" text-anchor="middle" dominant-baseline="middle">
-          Product ${id}
-        </text>
-      </svg>
-    `);
-  });
+  //   res.type("image/svg+xml");
+  //   res.send(`
+  //     <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  //       <rect width="${width}" height="${height}" fill="#1a202c"/>
+  //       <text x="50%" y="50%" font-family="Arial" font-size="48" fill="#fff" text-anchor="middle" dominant-baseline="middle">
+  //         Product ${id}
+  //       </text>
+  //     </svg>
+  //   `);
+  // });
 
   app.use("*", async (req, res) => {
     const url = req.originalUrl;
