@@ -1,53 +1,76 @@
-import express from "express";
 import fs from "fs";
 import path from "path";
+import express from "express";
 import { fileURLToPath } from "url";
-import { render } from "./src/entry-server"; // import render function
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const isProd = process.env.NODE_ENV === "production";
-const port = process.env.PORT || 3000;
+const resolve = (p) => path.resolve(__dirname, p);
+
 const app = express();
 
+let render;
+let indexHtml;
+
+if (isProd) {
+  // In production: Serve static assets and import built SSR render
+  app.use(
+    "/assets",
+    express.static(resolve("dist/client/assets"), { index: false })
+  );
+
+  indexHtml = fs.readFileSync(resolve("dist/client/index.html"), "utf-8");
+
+  render = (await import(resolve("dist/server/entry-server.js"))).render;
+} else {
+  // In dev: Use Vite's middleware
+  const vite = await (
+    await import("vite")
+  ).createServer({
+    root: process.cwd(),
+    server: { middlewareMode: "ssr" },
+    appType: "custom",
+  });
+
+  app.use(vite.middlewares);
+
+  app.use("*", async (req, res) => {
+    try {
+      const url = req.originalUrl;
+      let template = fs.readFileSync(resolve("index.html"), "utf-8");
+      template = await vite.transformIndexHtml(url, template);
+
+      const { render } = await vite.ssrLoadModule("/src/entry-server.jsx");
+      const appHtml = render(url, {});
+
+      const html = template.replace(`<!--app-html-->`, appHtml);
+      res.status(200).set({ "Content-Type": "text/html" }).end(html);
+    } catch (e) {
+      vite.ssrFixStacktrace(e);
+      console.error(e);
+      res.status(500).end(e.message);
+    }
+  });
+
+  // No need to continue after dev config
+  return;
+}
+
 app.use("*", async (req, res) => {
-  const url = req.originalUrl;
-
-  // Simulate metadata (in real cases, you'd get this from DB or file)
-  const metadata = {
-    title: "My Page Title",
-    description: "This is my page description.",
-    ogTitle: "OG Title",
-    ogDescription: "OG Description",
-    ogImage: "https://example.com/og-image.png",
-    ogUrl: `https://example.com${url}`,
-    twitterCard: "summary_large_image",
-  };
-
-  const template = fs.readFileSync(
-    path.resolve(__dirname, "dist/index.html"),
-    "utf-8"
-  );
-  const appHtml = render(url, metadata);
-
-  // Inject HTML + metadata into template
-  const html = template.replace(`<!--app-html-->`, appHtml).replace(
-    `<!--head-tags-->`,
-    `
-      <title>${metadata.title}</title>
-      <meta name="description" content="${metadata.description}" />
-      <meta property="og:title" content="${metadata.ogTitle}" />
-      <meta property="og:description" content="${metadata.ogDescription}" />
-      <meta property="og:image" content="${metadata.ogImage}" />
-      <meta property="og:image:width" content="300" />
-      <meta property="og:image:height" content="300" />
-      <meta property="og:url" content="${metadata.ogUrl}" />
-      <meta name="twitter:card" content="${metadata.twitterCard}" />
-    `
-  );
-
-  res.status(200).set({ "Content-Type": "text/html" }).end(html);
+  try {
+    const url = req.originalUrl;
+    const appHtml = render(url, {});
+    const html = indexHtml.replace(`<!--app-html-->`, appHtml);
+    res.status(200).set({ "Content-Type": "text/html" }).end(html);
+  } catch (e) {
+    console.error(e);
+    res.status(500).end(e.message);
+  }
 });
 
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
