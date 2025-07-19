@@ -19,7 +19,12 @@ async function createServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.resolve(__dirname, "dist/client")));
+    // In production, serve static files from dist/client
+    app.use(
+      express.static(path.resolve(__dirname, "dist/client"), {
+        index: false, // Don't serve index.html
+      })
+    );
   }
 
   // OG Image endpoint
@@ -34,7 +39,7 @@ async function createServer() {
         ? `https://${req.headers.host}`
         : `http://localhost:${PORT}`;
 
-      // ... metadata logic ...
+      // ... your metadata logic ...
 
       let template;
       if (!isProduction) {
@@ -54,16 +59,20 @@ async function createServer() {
       if (!isProduction) {
         render = (await vite.ssrLoadModule("/src/entry-server.jsx")).render;
       } else {
-        render = (await import("./dist/server/entry-server.js")).render;
+        // Vercel uses different directory structure
+        render = (await import("./dist/server/entry-server.jsx")).render;
       }
 
       const appHtml = await render(req.originalUrl, metadata);
       const html = template.replace(`<!--ssr-outlet-->`, appHtml);
-      // ... other metadata replacements ...
+      // ... your metadata replacements ...
 
       res.status(200).set({ "Content-Type": "text/html" }).end(html);
     } catch (e) {
-      !isProduction && vite.ssrFixStacktrace(e);
+      if (!isProduction) {
+        vite.ssrFixStacktrace(e);
+      }
+      console.error(e.stack);
       res.status(500).end(e.stack);
     }
   });
@@ -72,12 +81,4 @@ async function createServer() {
 }
 
 // Vercel expects a serverless function
-if (process.env.VERCEL) {
-  createServer().then((app) => (module.exports = app));
-} else {
-  createServer().then((app) => {
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  });
-}
+export default createServer().then((app) => app);
