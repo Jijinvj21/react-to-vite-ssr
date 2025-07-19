@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "node server",
-    "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "NODE_ENV=production node server.js",
+
+    "build": "vite build && vite build --ssr src/entry-server.jsx --outDir dist/server.js"
   },
   "dependencies": {
     "express": "^5.1.0",
