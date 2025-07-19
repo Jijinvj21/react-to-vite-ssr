@@ -1,3 +1,77 @@
+// import express from "express";
+// import fs from "fs";
+// import path from "path";
+// import { fileURLToPath } from "url";
+
+// const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// const isProd = process.env.NODE_ENV === "production";
+
+// const app = express();
+
+// let vite;
+// if (!isProd) {
+//   try {
+//     const { createServer } = await import("vite");
+//     vite = await createServer({
+//       server: { middlewareMode: true },
+//       appType: "custom",
+//     });
+//     app.use(vite.middlewares);
+//   } catch (e) {
+//     console.error("Vite dev server failed to start:", e);
+//   }
+// } else {
+//   app.use(express.static("dist/client"));
+// }
+
+// // Fix: Use a proper route handler
+// app.get("*", async (req, res, next) => {
+//   try {
+//     const url = req.originalUrl;
+
+//     const templatePath = isProd
+//       ? path.resolve("dist/client/index.html")
+//       : path.resolve(__dirname, "index.html");
+
+//     let template = fs.readFileSync(templatePath, "utf-8");
+
+//     let render;
+//     if (!isProd) {
+//       template = await vite.transformIndexHtml(url, template);
+//       render = (await vite.ssrLoadModule("/src/entry-server.jsx")).render;
+//     } else {
+//       render = (await import("./dist/server/entry-server.js")).render;
+//     }
+
+//     const metadata = {
+//       title: "My Product Page",
+//       description: "This is a product page",
+//       ogTitle: "OG Product Title",
+//       ogDescription: "OG Product Description",
+//       ogImage: "https://example.com/image.jpg",
+//       ogUrl: `http://localhost:5173${url}`,
+//       twitterCard: "summary_large_image",
+//     };
+
+//     const { html, head } = await render(url, metadata);
+
+//     const finalHtml = template
+//       .replace(`<!--ssr-outlet-->`, html)
+//       .replace(`<title>React SSR</title>`, head);
+
+//     res.status(200).set({ "Content-Type": "text/html" }).end(finalHtml);
+//   } catch (e) {
+//     if (vite) {
+//       vite.ssrFixStacktrace(e);
+//     }
+//     console.error("Error during SSR:", e);
+//     next(e);
+//   }
+// });
+
+// app.listen(5173, () => {
+//   console.log("Server running at http://localhost:5173");
+// });
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
