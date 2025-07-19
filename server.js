@@ -10,13 +10,15 @@ async function createServer() {
   const app = express();
 
   const vite = await createViteServer({
-    server: { middlewareMode: true },
+    server: {
+      middlewareMode: true,
+    },
     appType: "custom",
   });
 
   app.use(vite.middlewares);
 
-  // Dynamic OG image endpoint
+  // Example dynamic OG image endpoint
   app.get("/og-image/:id", (req, res) => {
     const { id } = req.params;
     const width = 1200;
@@ -33,11 +35,10 @@ async function createServer() {
     `);
   });
 
-  // Handle all SSR routes (FIXED: removed invalid "*")
-  app.use(async (req, res, next) => {
+  app.use("*", async (req, res) => {
     const url = req.originalUrl;
-    // const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const baseUrl = `https://77vh87ql-5173.inc1.devtunnels.ms`;
+
+    const baseUrl = `https://${req.get("host")}`;
 
     // Default metadata
     let metadata = {
@@ -45,14 +46,12 @@ async function createServer() {
       description: "Default application description",
       ogTitle: "Vite + React",
       ogDescription: "A React application built with Vite",
-      // ogImage: `${baseUrl}/https://images.unsplash.com/photo-1682685797742-42c9987a2c34?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D`,
-
-      ogImage: `https://images.unsplash.com/photo-1682685797742-42c9987a2c34?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D`,
+      ogImage: `https://images.unsplash.com/photo-1682685797742-42c9987a2c34?q=80&w=1170&auto=format&fit=crop`,
       ogUrl: `${baseUrl}${url}`,
       twitterCard: "summary_large_image",
     };
 
-    // Route-specific metadata
+    // Product route
     if (url.includes("/product/")) {
       const productId = url.split("/").pop();
       metadata = {
@@ -60,18 +59,21 @@ async function createServer() {
         description: `Amazing product ${productId} - best in category`,
         ogTitle: `Special Offer: Product ${productId}`,
         ogDescription: `Limited time discount on product ${productId}`,
-        ogImage: `https://images.unsplash.com/photo-1682685797742-42c9987a2c34?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D`,
+        ogImage: `https://images.unsplash.com/photo-1682685797742-42c9987a2c34?q=80&w=1170&auto=format&fit=crop`,
         ogUrl: `${baseUrl}${url}`,
         twitterCard: "summary_large_image",
       };
-    } else if (url.includes("/blog/")) {
+    }
+
+    // Blog route
+    if (url.includes("/blog/")) {
       const slug = url.split("/").pop();
       metadata = {
         title: `Blog: ${slug.replace(/-/g, " ")}`,
         description: `Read our latest blog post about ${slug}`,
         ogTitle: `New Blog: ${slug.replace(/-/g, " ")}`,
         ogDescription: `Check out our insights on ${slug}`,
-        ogImage: `https://images.unsplash.com/photo-1682685797742-42c9987a2c34?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D`,
+        ogImage: `https://images.unsplash.com/photo-1682685797742-42c9987a2c34?q=80&w=1170&auto=format&fit=crop`,
         ogUrl: `${baseUrl}${url}`,
         twitterCard: "summary",
       };
@@ -96,8 +98,9 @@ async function createServer() {
         .replace(/__OG_IMAGE__/g, metadata.ogImage)
         .replace(/__OG_URL__/g, metadata.ogUrl)
         .replace(/__TWITTER_CARD__/g, metadata.twitterCard)
-        .replace(/__OG_IMAGE_WIDTH__/g, "300")
-        .replace(/__OG_IMAGE_HEIGHT__/g, "300");
+        .replace(/__OG_IMAGE_WIDTH__/g, "1200")
+        .replace(/__OG_IMAGE_HEIGHT__/g, "630");
+
       res.status(200).set({ "Content-Type": "text/html" }).end(html);
     } catch (e) {
       vite.ssrFixStacktrace(e);
@@ -105,8 +108,9 @@ async function createServer() {
     }
   });
 
-  app.listen(5173, () => {
-    console.log("SSR server running on http://localhost:5173");
+  const PORT = process.env.PORT || 5173;
+  app.listen(PORT, () => {
+    console.log(`SSR server running on http://localhost:${PORT}`);
   });
 }
 
