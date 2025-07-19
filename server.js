@@ -13,10 +13,7 @@ let render;
 
 if (isProd) {
   // In production, load pre-built files
-  template = fs.readFileSync(
-    path.resolve(__dirname, "dist/client/index.html"),
-    "utf-8"
-  );
+  template = fs.readFileSync(path.resolve(__dirname, "index.html"), "utf-8");
   render = (await import("./dist/server/entry-server.js")).render;
   app.use(express.static(path.resolve(__dirname, "dist/client")));
 } else {
